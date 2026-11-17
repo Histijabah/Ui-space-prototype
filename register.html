@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123b6d">
+  <link rel="manifest" href="manifest.json">
+  <title>Register — UI-ScholarHub</title>
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header>
+    <div class="nav wrap">
+      <a class="brand" href="index.html">UI-ScholarHub</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <div id="flash-area"></div>
+    <div class="form-card">
+      <h1>Create account</h1>
+      <p>Use your University of Ibadan email.</p>
+
+      <form id="register-form">
+        <label>
+          Full name
+          <input name="name" required />
+        </label>
+
+        <label>
+          UI email
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="name@ui.edu.ng or name@dlc.ui.edu.ng"
+          />
+        </label>
+
+        <label>
+          Password
+          <input type="password" name="password" required minlength="8" />
+        </label>
+
+        <button class="btn">Register</button>
+      </form>
+    </div>
+  </main>
+  <footer>
+    <div class="wrap">CSC 476 • University of Ibadan • UI-ScholarHub prototype</div>
+  </footer>
+  <script src="static/app.js"></script>
+  <script>
+    App.ready.then(function () {
+      var form = document.getElementById('register-form');
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var name = form.name.value.trim(), email = form.email.value.trim().toLowerCase(), password = form.password.value;
+        function fail(msg) { form.reset(); App.showFlash(msg); }
+        if (!(email.endsWith('@ui.edu.ng') || email.endsWith('@dlc.ui.edu.ng')))
+          return fail('Use a University of Ibadan email address ending in @ui.edu.ng or @dlc.ui.edu.ng.');
+        if (password.length < 8) return fail('Password must be at least 8 characters.');
+        var users = App.Users.all();
+        if (users.some(function (u) { return u.email === email; })) return fail('An account with that email already exists.');
+        var id = App.nextId(users);
+        users.push({ id: id, name: name, email: email, password_hash: await App.hashPassword(password), role: 'depositor', created_at: App.now() });
+        App.Users.set(users);
+        App.login(id); App.flash('Account created.'); App.go('index.html');
+      });
+    });
+  </script>
+</body>
+</html>

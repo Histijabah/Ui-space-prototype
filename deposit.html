@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123b6d">
+  <link rel="manifest" href="manifest.json">
+  <title>Deposit — UI-ScholarHub</title>
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header>
+    <div class="nav wrap">
+      <a class="brand" href="index.html">UI-ScholarHub</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <div id="flash-area"></div>
+    <div class="form-card wide">
+      <h1>Deposit research output</h1>
+      <p>Your submission stays pending until a librarian reviews it.</p>
+      <form id="deposit-form">
+        <div class="two">
+          <label>Title<input name="title" required></label>
+          <label>Authors<input name="authors" required placeholder="Surname A.; Surname B."></label>
+        </div>
+        <label>Abstract<textarea name="abstract" rows="6" required></textarea></label>
+        <label>Keywords<input name="keywords" required placeholder="repository, information retrieval, ..."></label>
+        <div class="two">
+          <label>Faculty<select name="faculty" id="d-faculty" required></select></label>
+          <label>Department<input name="department" required></label>
+        </div>
+        <div class="two">
+          <label>Output type<select name="output_type" id="d-type" required></select></label>
+          <label>Year<input type="number" name="year" min="1900" max="2100" required></label>
+        </div>
+        <div class="two">
+          <label>Access<select name="access_level"><option value="open">Open</option><option value="restricted">Restricted</option></select></label>
+          <label>File <input type="file" name="file" accept=".pdf,.doc,.docx,.txt"></label>
+        </div>
+        <button class="btn">Submit for review</button>
+      </form>
+    </div>
+  </main>
+  <footer>
+    <div class="wrap">CSC 476 • University of Ibadan • UI-ScholarHub prototype</div>
+  </footer>
+  <script src="static/app.js"></script>
+  <script>
+    App.ready.then(function () {
+      if (!App.requireLogin()) return;
+      var form = document.getElementById('deposit-form');
+      function options(list) { return list.map(function (v) { return '<option>' + App.esc(v) + '</option>'; }).join(''); }
+      document.getElementById('d-faculty').innerHTML = options(App.FACULTIES);
+      document.getElementById('d-type').innerHTML = options(App.OUTPUT_TYPES);
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        function fail(msg) { App.showFlash(msg); window.scrollTo(0, 0); }
+        var v = {};
+        ['title', 'authors', 'abstract', 'keywords', 'faculty', 'department', 'output_type', 'year', 'access_level'].forEach(function (k) { v[k] = form[k].value; });
+        if (Object.keys(v).some(function (k) { return !v[k].trim(); })) return fail('Please complete all required fields.');
+        if (!/^\d+$/.test(v.year) || Number(v.year) < 1900 || Number(v.year) > new Date().getUTCFullYear() + 1) return fail('Enter a valid year.');
+
+        var file = form.file.files[0], stored = null;
+        if (file && file.name) {
+          var ext = file.name.indexOf('.') !== -1 ? file.name.split('.').pop().toLowerCase() : '';
+          if (App.ALLOWED_EXT.indexOf(ext) === -1) return fail('Allowed files: PDF, DOC, DOCX, TXT.');
+          if (file.size > App.MAX_UPLOAD) return fail('File is too large. Maximum size is 10 MB.');
+          stored = crypto.randomUUID().replace(/-/g, '') + '.' + ext;
+          await App.saveFile(stored, file);
+        }
+        var u = App.currentUser(), list = App.Outputs.all(), id = App.nextId(list);
+        list.push({ id: id, title: v.title, authors: v.authors, abstract: v.abstract, keywords: v.keywords, faculty: v.faculty,
+          department: v.department, output_type: v.output_type, year: Number(v.year), file_name: stored, access_level: v.access_level,
+          status: 'pending', submitted_by: u.id, moderation_note: null, views: 0, downloads: 0, created_at: App.now() });
+        App.Outputs.set(list);
+        App.audit(u.id, 'deposit', id);
+        App.flash('Submission received and sent for librarian review.');
+        App.go('my-outputs.html');
+      });
+    });
+  </script>
+</body>
+</html>

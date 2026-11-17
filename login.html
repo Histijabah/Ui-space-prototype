@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123b6d">
+  <link rel="manifest" href="manifest.json">
+  <title>Login — UI-ScholarHub</title>
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header>
+    <div class="nav wrap">
+      <a class="brand" href="index.html">UI-ScholarHub</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <div id="flash-area"></div>
+    <div class="form-card">
+      <h1>Login</h1>
+      <form id="login-form">
+        <label>UI email<input type="email" name="email" required placeholder="name@ui.edu.ng"></label>
+        <label>Password<input type="password" name="password" required></label>
+        <button class="btn">Login</button>
+      </form>
+      <p>New user? <a href="register.html">Create an account</a></p>
+    </div>
+  </main>
+  <footer>
+    <div class="wrap">CSC 476 • University of Ibadan • UI-ScholarHub prototype</div>
+  </footer>
+  <script src="static/app.js"></script>
+  <script>
+    App.ready.then(function () {
+      document.getElementById('login-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var email = this.email.value.trim().toLowerCase(), password = this.password.value;
+        var u = App.Users.all().filter(function (r) { return r.email === email; })[0];
+        if (u && await App.checkPassword(password, u.password_hash)) {
+          App.login(u.id);
+          App.go(App.safeNext(App.params().get('next')));
+          return;
+        }
+        App.showFlash('Invalid email or password.');
+      });
+    });
+  </script>
+</body>
+</html>

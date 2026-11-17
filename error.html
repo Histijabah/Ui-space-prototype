@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123b6d">
+  <link rel="manifest" href="manifest.json">
+  <title>Error — UI-ScholarHub</title>
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header>
+    <div class="nav wrap">
+      <a class="brand" href="index.html">UI-ScholarHub</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <div id="flash-area"></div>
+    <div class="empty">
+      <h1 id="code">404</h1>
+      <p id="message">The requested resource was not found.</p>
+      <a class="btn" href="index.html">Return home</a>
+    </div>
+  </main>
+  <footer>
+    <div class="wrap">CSC 476 • University of Ibadan • UI-ScholarHub prototype</div>
+  </footer>
+  <script src="static/app.js"></script>
+  <script>
+    App.ready.then(function () {
+      var c = App.params().get('code') === '403' ? 403 : 404;
+      var msg = c === 403 ? 'You do not have permission to access this page.' : 'The requested resource was not found.';
+      document.getElementById('code').textContent = c;
+      document.getElementById('message').textContent = msg;
+      document.title = c + ' — UI-ScholarHub';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123b6d">
+  <link rel="manifest" href="manifest.json">
+  <title>My Items — UI-ScholarHub</title>
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header>
+    <div class="nav wrap">
+      <a class="brand" href="index.html">UI-ScholarHub</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <div id="flash-area"></div>
+    <h1>My submissions</h1>
+    <section class="grid" id="my-list"></section>
+  </main>
+  <footer>
+    <div class="wrap">CSC 476 • University of Ibadan • UI-ScholarHub prototype</div>
+  </footer>
+  <script src="static/app.js"></script>
+  <script>
+    App.ready.then(function () {
+      if (!App.requireLogin()) return;
+      var u = App.currentUser(), esc = App.esc;
+      var rows = App.Outputs.all().filter(function (o) { return o.submitted_by === u.id; }).sort(function (a, b) { return b.id - a.id; });
+      document.getElementById('my-list').innerHTML = rows.length ? rows.map(function (o) {
+        return '<article class="card"><span class="tag">' + esc(o.status) + '</span><h2>' + esc(o.title) + '</h2>' +
+          '<p>' + esc(o.output_type) + ' • ' + o.year + '</p>' +
+          (o.moderation_note ? '<p class="note">Librarian note: ' + esc(o.moderation_note) + '</p>' : '') + '</article>';
+      }).join('') : '<div class="empty"><p>You have not submitted an output yet.</p><a class="btn" href="deposit.html">Deposit an output</a></div>';
+    });
+  </script>
+</body>
+</html>

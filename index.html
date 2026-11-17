@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123b6d">
+  <link rel="manifest" href="manifest.json">
+  <title>UI-ScholarHub — Search</title>
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header>
+    <div class="nav wrap">
+      <a class="brand" href="index.html">UI-ScholarHub</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <div id="flash-area"></div>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">UNIVERSITY OF IBADAN</p>
+        <h1>Find academic and research outputs.</h1>
+        <p>Search by topic, title, author, faculty, department, output type or year.</p>
+      </div>
+    </section>
+
+    <form class="searchbox" method="get" action="index.html">
+      <input name="q" id="f-q" placeholder="Search title, author, keyword or abstract">
+      <button>Search</button>
+      <div class="filters">
+        <select name="faculty" id="f-faculty"><option value="">All faculties</option></select>
+        <select name="department" id="f-department"><option value="">All departments</option></select>
+        <input name="author" id="f-author" placeholder="Author">
+        <select name="output_type" id="f-type"><option value="">All output types</option></select>
+        <select name="year" id="f-year"><option value="">All years</option></select>
+      </div>
+    </form>
+
+    <div class="result-head" id="result-head"></div>
+    <section class="grid" id="results"></section>
+  </main>
+  <footer>
+    <div class="wrap">CSC 476 • University of Ibadan • UI-ScholarHub prototype</div>
+  </footer>
+  <script src="static/app.js"></script>
+  <script>
+    App.ready.then(function () {
+      var p = App.params(), esc = App.esc;
+      var f = { q: (p.get('q') || '').trim(), faculty: p.get('faculty') || '', department: p.get('department') || '',
+                author: p.get('author') || '', output_type: p.get('output_type') || '', year: p.get('year') || '' };
+
+      function fill(id, values, selected) {
+        document.getElementById(id).insertAdjacentHTML('beforeend', values.map(function (v) {
+          return '<option' + (String(v) === String(selected) ? ' selected' : '') + '>' + esc(v) + '</option>';
+        }).join(''));
+      }
+      var approved = App.Outputs.all().filter(function (o) { return o.status === 'approved'; });
+      var departments = Array.from(new Set(approved.map(function (o) { return o.department; }))).sort();
+      var years = Array.from(new Set(approved.map(function (o) { return o.year; }))).sort(function (a, b) { return b - a; });
+
+      document.getElementById('f-q').value = f.q;
+      document.getElementById('f-author').value = f.author;
+      fill('f-faculty', App.FACULTIES, f.faculty);
+      fill('f-department', departments, f.department);
+      fill('f-type', App.OUTPUT_TYPES, f.output_type);
+      fill('f-year', years, f.year);
+
+      var rows = App.searchOutputs(f);
+      var filtered = f.q || f.faculty || f.department || f.author || f.output_type || f.year;
+      document.getElementById('result-head').innerHTML =
+        '<strong>' + rows.length + ' result(s)</strong>' + (filtered ? '<a href="index.html">Clear filters</a>' : '');
+
+      document.getElementById('results').innerHTML = rows.length ? rows.map(function (o) {
+        return '<article class="card"><span class="tag">' + esc(o.output_type) + '</span>' +
+          '<h2><a href="detail.html?id=' + o.id + '">' + esc(o.title) + '</a></h2>' +
+          '<p class="muted">' + esc(o.authors) + '</p>' +
+          '<p>' + esc(o.abstract.slice(0, 180)) + (o.abstract.length > 180 ? '…' : '') + '</p>' +
+          '<div class="meta"><span>' + esc(o.faculty) + '</span><span>' + esc(o.department) + '</span><span>' + o.year + '</span></div></article>';
+      }).join('') : '<div class="empty"><h2>No matching outputs</h2><p>Try a different keyword or remove a filter.</p></div>';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123b6d">
+  <link rel="manifest" href="manifest.json">
+  <title>Librarian — UI-ScholarHub</title>
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header>
+    <div class="nav wrap">
+      <a class="brand" href="index.html">UI-ScholarHub</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <div id="flash-area"></div>
+    <h1>Librarian dashboard</h1>
+    <div class="stats" id="stats"></div>
+    <h2>Pending submissions</h2>
+    <div id="pending"></div>
+  </main>
+  <footer>
+    <div class="wrap">CSC 476 • University of Ibadan • UI-ScholarHub prototype</div>
+  </footer>
+  <script src="static/app.js"></script>
+  <script>
+    App.ready.then(function () {
+      if (!App.requireRole(['librarian', 'admin'])) return;
+      var esc = App.esc, all = App.Outputs.all();
+      var users = App.Users.all();
+      var pending = all.filter(function (o) { return o.status === 'pending'; }).sort(function (a, b) { return b.id - a.id; });
+      var sum = function (k) { return all.reduce(function (t, o) { return t + o[k]; }, 0); };
+
+      document.getElementById('stats').innerHTML =
+        '<div><strong>' + all.length + '</strong><span>Items</span></div>' +
+        '<div><strong>' + sum('views') + '</strong><span>Views</span></div>' +
+        '<div><strong>' + sum('downloads') + '</strong><span>Downloads</span></div>' +
+        '<div><strong>' + pending.length + '</strong><span>Pending</span></div>';
+
+      var box = document.getElementById('pending');
+      box.innerHTML = pending.length ? pending.map(function (o) {
+        return '<article class="moderation"><div><span class="tag">' + esc(o.output_type) + '</span><h3>' + esc(o.title) + '</h3>' +
+          '<p>' + esc(o.authors) + ' • ' + esc(o.faculty) + ' • ' + esc(o.department) + ' • ' + o.year + '</p><p>' + esc(o.abstract) + '</p></div>' +
+          '<form data-id="' + o.id + '"><textarea name="note" placeholder="Optional moderation note"></textarea>' +
+          '<div><button class="btn" name="action" value="approve">Approve</button> <button class="btn secondary" name="action" value="reject">Reject</button></div></form></article>';
+      }).join('') : '<p>No pending submissions.</p>';
+
+      box.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var form = e.target, action = e.submitter && e.submitter.value, u = App.currentUser();
+        if (action !== 'approve' && action !== 'reject') return;
+        var status = action === 'approve' ? 'approved' : 'rejected', id = Number(form.dataset.id);
+        var list = App.Outputs.all();
+        list.forEach(function (o) { if (o.id === id) { o.status = status; o.moderation_note = form.note.value.trim(); } });
+        App.Outputs.set(list);
+        App.audit(u.id, action, id);
+        App.flash('Submission ' + status + '.');
+        App.go('admin.html');
+      });
+    });
+  </script>
+</body>
+</html>

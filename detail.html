@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#123b6d">
+  <link rel="manifest" href="manifest.json">
+  <title>UI-ScholarHub</title>
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header>
+    <div class="nav wrap">
+      <a class="brand" href="index.html">UI-ScholarHub</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <div id="flash-area"></div>
+    <div id="detail"></div>
+  </main>
+  <footer>
+    <div class="wrap">CSC 476 • University of Ibadan • UI-ScholarHub prototype</div>
+  </footer>
+  <script src="static/app.js"></script>
+  <script>
+    App.ready.then(function () {
+      var id = Number(App.params().get('id')), esc = App.esc;
+      var outputs = App.Outputs.all();
+      var o = outputs.filter(function (r) { return r.id === id; })[0];
+      if (!o || o.status !== 'approved') { App.go('error.html?code=404'); return; }
+      o.views += 1; App.Outputs.set(outputs);
+
+      document.title = o.title + ' — UI-ScholarHub';
+      document.getElementById('detail').innerHTML =
+        '<a class="back" href="index.html">← Back to search</a>' +
+        '<article class="detail"><span class="tag">' + esc(o.output_type) + '</span>' +
+        '<h1>' + esc(o.title) + '</h1><p class="muted">' + esc(o.authors) + '</p>' +
+        '<div class="meta"><span>' + esc(o.faculty) + '</span><span>' + esc(o.department) + '</span><span>' + o.year + '</span><span>' + esc(o.access_level) + ' access</span></div>' +
+        '<h3>Abstract</h3><p>' + esc(o.abstract) + '</p>' +
+        '<h3>Keywords</h3><p>' + esc(o.keywords) + '</p>' +
+        '<div class="actions"><a class="btn" id="download-btn" href="#">View / Download</a></div></article>';
+
+      document.getElementById('download-btn').addEventListener('click', async function (e) {
+        e.preventDefault();
+        var list = App.Outputs.all();
+        var row = list.filter(function (r) { return r.id === id; })[0];
+        if (!row || row.status !== 'approved') { App.go('error.html?code=404'); return; }
+        if (row.access_level === 'restricted' && !App.currentUser()) {
+          App.flash('This item is restricted. Please log in.'); App.go('login.html'); return;
+        }
+        if (!row.file_name) {
+          App.showFlash('This sample record has no attached file.'); window.scrollTo(0, 0); return;
+        }
+        var blob = await App.getFile(row.file_name);
+        if (!blob) { App.showFlash('The file for this record is not available in this browser.'); window.scrollTo(0, 0); return; }
+        row.downloads += 1; App.Outputs.set(list);
+        var url = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = url; a.download = row.file_name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      });
+    });
+  </script>
+</body>
+</html>
